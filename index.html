@@ -56,10 +56,16 @@
       font-weight: 900;
       color: #ffb700;
       padding: 10px;
-      display: block;
+      display: inline-block;
       text-shadow: 0 0 5px rgba(255,153,0,0.3);
       min-width: 250px;
       white-space: nowrap;
+    }
+    /* Make sure the dots stay fixed */
+    #dots {
+      display: inline-block;
+      width: 2em; /* Adjust width as needed for 3 dots */
+      text-align: left;
     }
 
     /* Info Lines (Static Placeholders) */
@@ -179,11 +185,14 @@
   <canvas id="runeCanvas"></canvas>
 
   <!-- Title -->
-  <h2>Block F</h2>
+  <h2>Season 2: Block F</h2>
 
-  <!-- Countdown Container (Animated Placeholder) -->
+  <!-- Countdown Container (Static Placeholder with Animated Dots) -->
   <div id="countdown-container">
-    <div id="countdown">Loading Chaos</div>
+    <div id="countdown">
+      <span id="loading-text">Loading Chaos</span>
+      <span id="dots"></span>
+    </div>
   </div>
 
   <!-- Info Lines (Static Placeholders) -->
@@ -198,9 +207,7 @@
   <div id="footer">
     <div id="copy-feedback">DATA COPIED</div>
     <button id="copy-button">COPY TO CLIPBOARD</button>
-    <a href="https://docs.8-21.com/the-history-of-rsic/project-updates#block-888-888" target="_self">
-      8-21.com
-    </a>
+    <a href="https://docs.8-21.com/the-history-of-rsic/project-updates#block-888-888" target="_self">8-21.com</a>
   </div>
 
   <!-- Script Section -->
@@ -245,7 +252,7 @@
      * Current Block Data Update (Dynamic)
      ******************************************************/
     const targetBlock = 888888;
-    const avgBlockTime = 10 * 60 * 1000; // Not used in this static version
+    const avgBlockTime = 10 * 60 * 1000; // Not used in this static placeholder version
     let currentHeight = 0;
     async function fetchBlockData() {
       try {
@@ -270,13 +277,13 @@
     fetchBlockData();
 
     /******************************************************
-     * Animated "Loading Chaos" Placeholder
+     * Animated "Loading Chaos" Dots (Fixed Position)
      ******************************************************/
     let dotCount = 0;
     setInterval(() => {
-      dotCount = (dotCount + 1) % 4; // Cycles: 0,1,2,3
+      dotCount = (dotCount + 1) % 4; // Cycles through 0,1,2,3
       const dots = ".".repeat(dotCount);
-      document.getElementById("countdown").innerText = "Loading Chaos" + dots;
+      document.getElementById("dots").innerText = dots;
     }, 500);
 
     /******************************************************
