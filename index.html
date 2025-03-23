@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Block F</title>
+  <title>Block F Countdown</title>
   <link href="https://fonts.googleapis.com/css2?family=Nabla&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Play&display=swap" rel="stylesheet">
   <style>
@@ -16,13 +16,12 @@
       color: #FFFFFF;
       overflow-x: hidden;
     }
-
     /* Title */
     h2 {
       font-family: 'Nabla', sans-serif;
       font-size: 50px;
       margin-top: 50px;
-      margin-bottom: 15px;
+      margin-bottom: 15px; 
       color: #CCCCCC;
       text-transform: uppercase;
       letter-spacing: 2px;
@@ -36,7 +35,6 @@
         font-size: 40px;
       }
     }
-
     /* Countdown Container */
     #countdown-container {
       display: inline-block;
@@ -49,8 +47,7 @@
       z-index: 2;
       margin-bottom: 8px;
     }
-
-    /* Countdown Text */
+    /* Countdown Text - remains static */
     #countdown {
       font-size: 32px;
       font-weight: 900;
@@ -61,8 +58,7 @@
       min-width: 250px;
       white-space: nowrap;
     }
-
-    /* Info Lines */
+    /* Info Lines (Static Placeholders) */
     #estimate,
     #current-block,
     #blocks-left {
@@ -74,14 +70,6 @@
       position: relative;
       z-index: 2;
     }
-
-    /* Cube Canvas */
-    #cubeCanvas {
-      display: block;
-      margin: 20px auto;
-      background: transparent;
-    }
-
     /* Footer */
     #footer {
       font-size: 18px;
@@ -139,7 +127,6 @@
     #footer a:hover {
       color: #FF9900;
     }
-
     /* Background Runes Canvas */
     #runeCanvas {
       position: fixed;
@@ -151,7 +138,6 @@
       opacity: 0.28;
       z-index: 1;
     }
-
     /* One-Time Shimmer Effect for Data Updates */
     .shimmer-once {
       position: relative;
@@ -179,14 +165,14 @@
   <canvas id="runeCanvas"></canvas>
 
   <!-- Title -->
-  <h2>Block F Countdown</h2>
+  <h2>Block F</h2>
 
   <!-- Countdown Container (Static Placeholder) -->
   <div id="countdown-container">
     <div id="countdown">Loading Chaos...</div>
   </div>
 
-  <!-- Info Lines (Static Placeholders) -->
+  <!-- Info Lines (Static Placeholders, except current block) -->
   <div id="estimate">Estimate: Unknown</div>
   <div id="current-block">Current Block: Fetching...</div>
   <div id="blocks-left">Blocks Left: Unknown</div>
@@ -238,6 +224,37 @@
       requestAnimationFrame(drawRunes);
     }
     drawRunes();
+
+    /******************************************************
+     * Real-Time Block Data (Current Block Only)
+     ******************************************************/
+    const targetBlock = 888888;
+    const avgBlockTime = 10 * 60 * 1000; // Not used in this version
+    let currentHeight = 0;
+    async function fetchBlockData() {
+      try {
+        const res = await fetch("https://mempool.space/api/blocks/tip/height");
+        const fetchedHeight = await res.json();
+        if (fetchedHeight > currentHeight) {
+          currentHeight = fetchedHeight;
+          // Only update current block element; other info remains static.
+          document.getElementById("current-block").innerText = `Current Block: ${currentHeight}`;
+          // Optionally, you can apply a one-time shimmer effect for a visual cue.
+          applyShimmerEffect(document.getElementById("current-block"));
+        }
+      } catch (err) {
+        console.error("Error fetching block data:", err);
+      }
+    }
+    function applyShimmerEffect(el) {
+      el.classList.add("shimmer-once");
+      el.addEventListener("animationend", () => {
+        el.classList.remove("shimmer-once");
+      }, { once: true });
+    }
+    // Poll the API every 10 seconds for new blocks.
+    setInterval(fetchBlockData, 10000);
+    fetchBlockData();
 
     /******************************************************
      * Cube Animation with Shimmering Effect (Static Placeholder)
@@ -398,7 +415,7 @@
 #
 #  Countdown: Loading Chaos...
 #  Estimate: Unknown
-#  Current Block: Fetching...
+#  Current Block: ${document.getElementById("current-block").innerText}
 #  Blocks Left: Unknown
 \`\`\`
       `.trim();
