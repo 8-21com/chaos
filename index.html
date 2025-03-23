@@ -17,7 +17,7 @@
       overflow-x: hidden;
     }
 
-    /* Title: Block 888,888 */
+    /* Title */
     h2 {
       font-family: 'Nabla', sans-serif;
       font-size: 50px;
@@ -30,8 +30,6 @@
       position: relative;
       z-index: 2;
     }
-
-    /* Mobile adjustments: fallback to 'Play' and smaller font size */
     @media only screen and (max-width: 600px) {
       h2 {
         font-family: 'Play', sans-serif;
@@ -64,7 +62,7 @@
       white-space: nowrap;
     }
 
-    /* Info Lines Below Countdown */
+    /* Info Lines */
     #estimate,
     #current-block,
     #blocks-left {
@@ -76,10 +74,6 @@
       position: relative;
       z-index: 2;
     }
-    @keyframes pulse {
-      0%   { opacity: 1; }
-      100% { opacity: 0.85; }
-    }
 
     /* Cube Canvas */
     #cubeCanvas {
@@ -88,7 +82,7 @@
       background: transparent;
     }
 
-    /* Footer (copy button, data-copied message, link) */
+    /* Footer */
     #footer {
       font-size: 18px;
       font-weight: 900;
@@ -103,8 +97,6 @@
       flex-direction: column;
       align-items: center;
     }
-
-    /* DATA COPIED line */
     #copy-feedback {
       font-size: 16px;
       font-weight: 900;
@@ -114,8 +106,6 @@
       transition: opacity 0.4s ease-in-out;
       margin-bottom: 10px;
     }
-
-    /* COPY DATA Button (no hover effect, with tap-highlight removal) */
     #copy-button {
       padding: 15px 25px;
       font-size: 16px;
@@ -139,8 +129,6 @@
       outline: none !important;
       box-shadow: none !important;
     }
-
-    /* 8-21.com link */
     #footer a {
       text-decoration: none;
       color: #5c5a5a;
@@ -191,17 +179,18 @@
   <canvas id="runeCanvas"></canvas>
 
   <!-- Title -->
-  <h2>Block 888,888</h2>
+  <h2>Block F</h2>
 
   <!-- Countdown Container -->
   <div id="countdown-container">
-    <div id="countdown">Loading...</div>
+    <!-- Initial placeholder with animated dots will show until data loads -->
+    <div id="countdown">Loading Chaos</div>
   </div>
 
   <!-- Info Lines -->
-  <div id="estimate">Estimate: Calculating...</div>
+  <div id="estimate">Estimate: Unknown</div>
   <div id="current-block">Current Block: Fetching...</div>
-  <div id="blocks-left">Blocks Left: Calculating...</div>
+  <div id="blocks-left">Blocks Left: Unknown</div>
 
   <!-- 3D Cube (Wireframe) -->
   <canvas id="cubeCanvas"></canvas>
@@ -210,7 +199,7 @@
   <div id="footer">
     <div id="copy-feedback">DATA COPIED</div>
     <button id="copy-button">COPY TO CLIPBOARD</button>
-    <a href="https://docs.8-21.com/the-history-of-rsic/project-updates#block-888-888" target="_self">
+    <a href="https://docs.8-21.com/" target="_self">
       8-21.com 
     </a>
   </div>
@@ -263,7 +252,7 @@
     let lastBlockTime = Date.now(); // timestamp when the last block was detected
     let estimatedTimeLeft = 0; // in ms
 
-    // Function to apply shimmer effect once on an element
+    // Function to apply one-time shimmer effect to data elements
     function applyShimmerEffect(el) {
       el.classList.add("shimmer-once");
       el.addEventListener("animationend", () => {
@@ -271,12 +260,12 @@
       }, { once: true });
     }
 
-    // Fetch initial block data (and on subsequent polls)
+    // Fetch block data from the API
     async function fetchBlockData() {
       try {
         const res = await fetch("https://mempool.space/api/blocks/tip/height");
         const fetchedHeight = await res.json();
-        // If a new block is detected, update the values and trigger shimmer on data fields.
+        // If a new block is detected, update the data and apply shimmer
         if (fetchedHeight > currentHeight) {
           currentHeight = fetchedHeight;
           lastBlockTime = Date.now();
@@ -292,7 +281,7 @@
           });
           document.getElementById("estimate").innerText = `Estimate: ${estimateDate}`;
 
-          // Apply one-time shimmer effect to each data element.
+          // Apply one-time shimmer effect to these elements
           applyShimmerEffect(document.getElementById("estimate"));
           applyShimmerEffect(document.getElementById("current-block"));
           applyShimmerEffect(document.getElementById("blocks-left"));
@@ -305,14 +294,26 @@
     setInterval(fetchBlockData, 10000);
     fetchBlockData();
 
-    // Update the overall countdown to block 888,888.
-    function updateCountdown() {
-      const now = Date.now();
-      const targetTime = lastBlockTime + estimatedTimeLeft; // time when target block is estimated
-      let remaining = targetTime - now;
-      if (remaining < 0) {
-        remaining = 0;
+    // Animate the "Loading Chaos" dots if data hasn't loaded yet.
+    let dotCount = 0;
+    setInterval(() => {
+      if (currentHeight === 0) { // Data not yet loaded
+        dotCount = (dotCount + 1) % 4; // Cycle 0,1,2,3
+        const dots = ".".repeat(dotCount);
+        document.getElementById("countdown").innerText = "Loading Chaos" + dots;
       }
+    }, 500);
+
+    // Update the countdown timer only if data is loaded
+    function updateCountdown() {
+      if (currentHeight === 0) {
+        // Data not loaded yet; do nothing here.
+        return;
+      }
+      const now = Date.now();
+      const targetTime = lastBlockTime + estimatedTimeLeft;
+      let remaining = targetTime - now;
+      if (remaining < 0) { remaining = 0; }
       const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
       const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
@@ -349,16 +350,14 @@
       const off = offset;
       const x = (ctx.canvas.width - s - off) / 2;
       const y = (ctx.canvas.height - s + off) / 2 + cubeOffsetY;
-      // Front face vertices
-      const A = { x: x,      y: y };
-      const B = { x: x + s,  y: y };
-      const C = { x: x + s,  y: y + s };
-      const D = { x: x,      y: y + s };
-      // Back face vertices
-      const E = { x: x + off,     y: y - off };
+      const A = { x: x, y: y };
+      const B = { x: x + s, y: y };
+      const C = { x: x + s, y: y + s };
+      const D = { x: x, y: y + s };
+      const E = { x: x + off, y: y - off };
       const F = { x: x + s + off, y: y - off };
       const G = { x: x + s + off, y: y + s - off };
-      const H = { x: x + off,     y: y + s - off };
+      const H = { x: x + off, y: y + s - off };
       ctx.strokeStyle = "rgba(60, 60, 60, 1)";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -396,11 +395,9 @@
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 0.6;
-      // Cycle: from -s (off left) to +s (off right)
       const cycleDistance = 2 * s;
       const t = (shimmerOffset % cycleDistance) / cycleDistance;
       const shimmerX = -s + 2 * s * t;
-      // Use the same countdown color (#ffb700 or rgb(255,183,0))
       const grad = ctx.createLinearGradient(x + shimmerX, y, x + shimmerX + s, y);
       grad.addColorStop(0, "rgba(255,183,0,0)");
       grad.addColorStop(0.5, "rgba(255,183,0,1)");
