@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RSIC SEASON II DASHBOARD</title>
+  <title>RSIC Season 2 Dashboard by hangry</title>
   <style>
     * {
       box-sizing: border-box;
@@ -30,6 +30,14 @@
       z-index: 5;
       pointer-events: none;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      padding: 0 20px;
+    }
+    @media (max-width: 768px) {
+      .title {
+        font-size: 1.2rem;
+        padding: 0 30px;
+        top: 30px;
+      }
     }
     #launchBtn {
       position: absolute;
@@ -69,7 +77,7 @@
   </style>
 </head>
 <body>
-  <div class="title">RSIC SEASON II: CHAOS</div>
+  <div class="title">RSIC SEASON 2: CHAOS</div>
   <button id="launchBtn">Launch Season 2 Dashboard</button>
   <div id="debug"></div>
   
@@ -296,11 +304,18 @@
         }
       });
       
+      // CLICK/TAP ATTEMPTS
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Just teleport without showing alert
+        teleport(mouseX, mouseY, false);
+        return false;
+      });
+      
       button.addEventListener('touchend', (e) => {
         if (e.target === button) {
           e.preventDefault();
-          attempts++;
-          alert(`Nice tap! Attempts: ${attempts}`);
+          // Just teleport without showing alert
           if (e.changedTouches && e.changedTouches[0]) {
             teleport(e.changedTouches[0].clientX, e.changedTouches[0].clientY, true);
           }
