@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RSIC Season 2 Dashboard</title>
+  <title>RSIC SEASON II DASHBOARD</title>
   <style>
     * {
       box-sizing: border-box;
@@ -294,15 +294,6 @@
         if (e.touches && e.touches[0]) {
           evade(e.touches[0].clientX, e.touches[0].clientY, true);
         }
-      });
-      
-      // CLICK/TAP ATTEMPTS
-      button.addEventListener('click', (e) => {
-        e.preventDefault();
-        attempts++;
-        alert(`Nice try! Attempts: ${attempts}`);
-        teleport(mouseX, mouseY, false);
-        return false;
       });
       
       button.addEventListener('touchend', (e) => {
