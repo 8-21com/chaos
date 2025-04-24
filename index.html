@@ -57,15 +57,15 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="container">
     <div class="title">THE MINERS STAY ON</div>
     <button id="launchBtn">Launch Season 2 Dashboard</button>
   </div>
   <script>
     const button = document.getElementById("launchBtn");
-    const container = document.querySelector(".container");
+    const container = document.getElementById("container");
 
-    container.addEventListener("mousemove", (e) => {
+    function evadeCursor(e) {
       const mouseX = e.clientX;
       const mouseY = e.clientY;
 
@@ -98,7 +98,37 @@
         button.style.top = `${newTop}px`;
         button.style.transform = "translate(0, 0)";
       }
+    }
+
+    function teleportRandomly() {
+      const buttonWidth = button.offsetWidth;
+      const buttonHeight = button.offsetHeight;
+      const maxX = window.innerWidth - buttonWidth;
+      const maxY = window.innerHeight - buttonHeight;
+
+      const randX = Math.random() * maxX;
+      const randY = Math.random() * maxY;
+
+      button.style.left = `${randX}px`;
+      button.style.top = `${randY}px`;
+      button.style.transform = "translate(0, 0)";
+    }
+
+    // Desktop mouse evasion
+    container.addEventListener("mousemove", (e) => {
+      if (!isTouchDevice()) {
+        evadeCursor(e);
+      }
     });
+
+    // Mobile touch teleport
+    container.addEventListener("touchstart", (e) => {
+      teleportRandomly();
+    });
+
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
   </script>
 </body>
 </html>
