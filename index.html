@@ -18,11 +18,6 @@
       overflow: hidden;
       position: relative;
     }
-    .container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
     .title {
       position: absolute;
       top: 20px;
@@ -36,8 +31,11 @@
       pointer-events: none;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     }
-    button {
+    #launchBtn {
       position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       padding: 1rem 2rem;
       font-size: 1.1rem;
       background-color: rgba(40, 40, 40, 0.6);
@@ -45,14 +43,11 @@
       border: 1px solid #f0f0f0;
       border-radius: 4px;
       cursor: pointer;
-      transition: all 0.2s ease;
       opacity: 0.8;
       z-index: 10;
       box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
       text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     }
-    
-    /* Trail effect element */
     .button-trail {
       position: absolute;
       width: 10px;
@@ -62,228 +57,273 @@
       pointer-events: none;
       z-index: 9;
     }
+    #debug {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      color: #999;
+      font-size: 10px;
+      font-family: monospace;
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
-  <div class="container" id="container">
-    <div class="title">RSIC SEASON II: CHAOS</div>
-    <button id="launchBtn">Launch Season 2 Dashboard</button>
-    <div id="trailContainer"></div>
-  </div>
+  <div class="title">THE MINERS STAY ON</div>
+  <button id="launchBtn">Launch Season 2 Dashboard</button>
+  <div id="debug"></div>
+  
   <script>
-    // Wait for DOM to be fully loaded
-    document.addEventListener('DOMContentLoaded', function() {
-      const button = document.getElementById("launchBtn");
-      const container = document.getElementById("container");
+    // Wait until everything is loaded
+    window.onload = function() {
+      const button = document.getElementById('launchBtn');
+      const debug = document.getElementById('debug');
       
-      // Make sure button is found
-      if (!button) {
-        console.error("Button not found!");
-        return;
+      // Create trail elements
+      const trails = [];
+      const maxTrails = 8;
+      for (let i = 0; i < maxTrails; i++) {
+        const trail = document.createElement('div');
+        trail.className = 'button-trail';
+        trail.style.opacity = (1 - i/maxTrails) * 0.5;
+        trail.style.transform = `scale(${1 - i/maxTrails})`;
+        trail.style.display = 'none';
+        document.body.appendChild(trail);
+        trails.push(trail);
       }
       
-      // Set initial position with a slight delay to ensure dimensions are calculated
-      setTimeout(function() {
-        setInitialPosition();
-      }, 100);
+      // Track positions
+      let trailPositions = [];
+      let mouseX = window.innerWidth / 2;
+      let mouseY = window.innerHeight / 2;
+      let lastButtonX = window.innerWidth / 2;
+      let lastButtonY = window.innerHeight / 2;
+      let velocityX = 0;
+      let velocityY = 0;
+      let lastX = window.innerWidth / 2;
+      let lastY = window.innerHeight / 2;
       
-      function setInitialPosition() {
-        const buttonWidth = button.offsetWidth;
-        const buttonHeight = button.offsetHeight;
+      // Enable debug
+      const debugMode = false;
+      
+      // Counter
+      let attempts = 0;
+      
+      // Update trails
+      function updateTrails() {
+        const rect = button.getBoundingClientRect();
+        const btnX = rect.left + rect.width/2;
+        const btnY = rect.top + rect.height/2;
         
-        button.style.position = "absolute";
-        button.style.left = `${window.innerWidth / 2 - buttonWidth / 2}px`;
-        button.style.top = `${window.innerHeight / 2 - buttonHeight / 2}px`;
-        
-        // Make button visible if it was hidden
-        button.style.opacity = "0.8";
-      }
-      
-      // Touch interaction handling
-      let lastTouchX = 0;
-      let lastTouchY = 0;
-      let touchVelocityX = 0;
-      let touchVelocityY = 0;
-      let touchActive = false;
-      
-      function updateTouchVelocity(currentX, currentY) {
-        touchVelocityX = currentX - lastTouchX;
-        touchVelocityY = currentY - lastTouchY;
-        lastTouchX = currentX;
-        lastTouchY = currentY;
-      }
-      
-      function evadeTouchOrCursor(clientX, clientY, isTouch) {
-        // Update the appropriate velocity tracker
-        if (isTouch) {
-          updateTouchVelocity(clientX, clientY);
-        } else {
-          updateMouseVelocity(clientX, clientY);
+        trailPositions.unshift({x: btnX, y: btnY});
+        if (trailPositions.length > maxTrails) {
+          trailPositions = trailPositions.slice(0, maxTrails);
         }
         
-        const btnRect = button.getBoundingClientRect();
-        const btnX = btnRect.left + btnRect.width / 2;
-        const btnY = btnRect.top + btnRect.height / 2;
+        for (let i = 0; i < trails.length; i++) {
+          if (i < trailPositions.length) {
+            trails[i].style.display = 'block';
+            trails[i].style.left = `${trailPositions[i].x - 5}px`;
+            trails[i].style.top = `${trailPositions[i].y - 5}px`;
+          } else {
+            trails[i].style.display = 'none';
+          }
+        }
+      }
+      
+      // CORE EVASION FUNCTION
+      function evade(x, y, isTouch) {
+        // Update pointer tracking
+        velocityX = x - lastX;
+        velocityY = y - lastY;
+        lastX = x;
+        lastY = y;
         
-        const distX = clientX - btnX;
-        const distY = clientY - btnY;
-        const distance = Math.sqrt(distX * distX + distY * distY);
+        const rect = button.getBoundingClientRect();
+        const btnX = rect.left + rect.width/2;
+        const btnY = rect.top + rect.height/2;
         
-        // Increased detection radius for touch (since fingers are less precise)
-        const maxDist = isTouch ? 450 : 350;
+        // Update last button position
+        lastButtonX = btnX;
+        lastButtonY = btnY;
         
-        if (distance < maxDist) {
-          // Calculate angle between pointer and button
-          const angle = Math.atan2(distY, distX);
+        // Calculate distance
+        const dx = x - btnX;
+        const dy = y - btnY;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        
+        // Only react if within range
+        const detectionRadius = isTouch ? 450 : 350;
+        
+        if (debugMode) {
+          debug.textContent = `Pointer: ${Math.round(x)},${Math.round(y)} | Button: ${Math.round(btnX)},${Math.round(btnY)} | Distance: ${Math.round(distance)} | Evading: ${distance < detectionRadius}`;
+        }
+        
+        if (distance < detectionRadius) {
+          // Calculate angle
+          const angle = Math.atan2(dy, dx);
           
-          // Add jitter based on distance (more erratic when closer)
-          const jitterAmount = (maxDist - distance) / maxDist * (isTouch ? 30 : 20);
-          const jitterX = (Math.random() * 2 - 1) * jitterAmount;
-          const jitterY = (Math.random() * 2 - 1) * jitterAmount;
+          // Add jitter
+          const jitterFactor = (detectionRadius - distance) / detectionRadius * (isTouch ? 30 : 20);
+          const jitterX = (Math.random() * 2 - 1) * jitterFactor;
+          const jitterY = (Math.random() * 2 - 1) * jitterFactor;
           
-          // Calculate base movement (exponentially stronger when closer)
-          const distanceFactor = 1 - distance / maxDist;
-          const exponentialFactor = Math.pow(distanceFactor, 2) * (isTouch ? 6 : 4); // Stronger for touch
-          const moveFactor = Math.min(isTouch ? 150 : 120, maxDist * exponentialFactor);
+          // Calculate movement factor (exponential)
+          const distFactor = Math.pow(1 - distance/detectionRadius, 2) * (isTouch ? 6 : 4);
+          const moveFactor = Math.min(isTouch ? 150 : 120, detectionRadius * distFactor);
           
-          // Add anticipatory evasion (move away from pointer's predicted path)
-          const velocityX = isTouch ? touchVelocityX : mouseVelocityX;
-          const velocityY = isTouch ? touchVelocityY : mouseVelocityY;
-          const predictiveX = -Math.sign(velocityX) * Math.abs(velocityX) * (isTouch ? 5 : 3);
-          const predictiveY = -Math.sign(velocityY) * Math.abs(velocityY) * (isTouch ? 5 : 3);
+          // Add predictive evasion
+          const predictX = -Math.sign(velocityX) * Math.abs(velocityX) * (isTouch ? 5 : 3);
+          const predictY = -Math.sign(velocityY) * Math.abs(velocityY) * (isTouch ? 5 : 3);
           
-          // Combine all movement factors
-          const moveX = -Math.cos(angle) * moveFactor + jitterX + predictiveX;
-          const moveY = -Math.sin(angle) * moveFactor + jitterY + predictiveY;
+          // Combine all factors
+          const moveX = -Math.cos(angle) * moveFactor + jitterX + predictX;
+          const moveY = -Math.sin(angle) * moveFactor + jitterY + predictY;
           
-          // Update position
-          let newLeft = btnRect.left + moveX;
-          let newTop = btnRect.top + moveY;
+          // Get new position
+          let newLeft = rect.left + moveX;
+          let newTop = rect.top + moveY;
           
-          // Clamp to window bounds with padding
+          // Keep in bounds
           const padding = 20;
-          newLeft = Math.max(padding, Math.min(window.innerWidth - btnRect.width - padding, newLeft));
-          newTop = Math.max(padding, Math.min(window.innerHeight - btnRect.height - padding, newTop));
+          newLeft = Math.max(padding, Math.min(window.innerWidth - rect.width - padding, newLeft));
+          newTop = Math.max(padding, Math.min(window.innerHeight - rect.height - padding, newTop));
           
-          // Apply new position with dynamic transition - faster for touch
-          const transitionSpeed = Math.max(0.01, Math.min(isTouch ? 0.1 : 0.15, distance / 1000));
-          button.style.transition = `left ${transitionSpeed}s ease, top ${transitionSpeed}s ease`;
+          // Set position
+          const speed = Math.max(0.01, Math.min(isTouch ? 0.1 : 0.15, distance/1000));
+          button.style.transition = `left ${speed}s ease, top ${speed}s ease`;
           button.style.left = `${newLeft}px`;
           button.style.top = `${newTop}px`;
           
-          // Change button opacity based on proximity
-          const opacityValue = 0.5 + (distance / maxDist) * 0.5;
-          button.style.opacity = opacityValue.toString();
+          // Change opacity
+          const opacityValue = 0.5 + (distance/detectionRadius) * 0.5;
+          button.style.opacity = opacityValue;
           
-          // Teleport if very close or when pointer is moving fast
-          const pointerSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-          const teleportThreshold = isTouch ? 120 : 80; // Larger threshold for touch
-          const speedThreshold = isTouch ? 10 : 15;
-          if (distance < teleportThreshold || (distance < (isTouch ? 200 : 150) && pointerSpeed > speedThreshold)) {
-            teleportRandomly(isTouch ? clientX : null, isTouch ? clientY : null);
+          // Teleport if too close
+          const pointerSpeed = Math.sqrt(velocityX*velocityX + velocityY*velocityY);
+          if (distance < (isTouch ? 120 : 80) || 
+              (distance < (isTouch ? 200 : 150) && pointerSpeed > (isTouch ? 10 : 15))) {
+            teleport(x, y, isTouch);
           }
+          
+          updateTrails();
+          return true;
         } else {
-          // Reset opacity when far away
           button.style.opacity = "0.8";
+          return false;
         }
       }
       
-      function evadeCursor(e) {
-        if (!isTouchDevice()) {
-          evadeTouchOrCursor(e.clientX, e.clientY, false);
-        }
-      }
-      
-      function handleTouchStart(e) {
-        touchActive = true;
-        if (e.touches && e.touches[0]) {
-          lastTouchX = e.touches[0].clientX;
-          lastTouchY = e.touches[0].clientY;
-          evadeTouchOrCursor(lastTouchX, lastTouchY, true);
-        }
-      }
-      
-      function handleTouchMove(e) {
-        if (touchActive && e.touches && e.touches[0]) {
-          evadeTouchOrCursor(e.touches[0].clientX, e.touches[0].clientY, true);
-        }
-      }
-      
-      function handleTouchEnd() {
-        touchActive = false;
-        touchVelocityX = 0;
-        touchVelocityY = 0;
-      }
-      
-      function teleportRandomly(touchX, touchY) {
-        const buttonWidth = button.offsetWidth;
-        const buttonHeight = button.offsetHeight;
+      // Teleportation function
+      function teleport(x, y, isTouch) {
+        const rect = button.getBoundingClientRect();
         const padding = 20;
         
-        const maxX = window.innerWidth - buttonWidth - padding * 2;
-        const maxY = window.innerHeight - buttonHeight - padding * 2;
+        // Window bounds
+        const maxX = window.innerWidth - rect.width - padding*2;
+        const maxY = window.innerHeight - rect.height - padding*2;
         
-        // Get pointer position to avoid teleporting near it
-        const pointerX = touchX !== null ? touchX : lastMouseX;
-        const pointerY = touchY !== null ? touchY : lastMouseY;
-        
-        // Try up to 5 times to find a position away from the pointer
-        let randX, randY, distanceToPointer;
-        let attempts = 0;
-        let minDistanceRequired = touchX !== null ? 250 : 200; // Greater distance for touch
+        // Try to find position far from pointer and previous position
+        let newX, newY, distToPointer, distToPrev;
+        let tries = 0;
+        let minPointerDist = isTouch ? 300 : 200;
+        let minPrevDist = isTouch ? 400 : 200;
         
         do {
-          randX = padding + Math.random() * maxX;
-          randY = padding + Math.random() * maxY;
+          newX = padding + Math.random() * maxX;
+          newY = padding + Math.random() * maxY;
           
-          const dx = pointerX - randX;
-          const dy = pointerY - randY;
-          distanceToPointer = Math.sqrt(dx * dx + dy * dy);
+          // Distance to pointer
+          const dxPointer = x - newX;
+          const dyPointer = y - newY;
+          distToPointer = Math.sqrt(dxPointer*dxPointer + dyPointer*dyPointer);
           
-          attempts++;
-          // Reduce required distance if we can't find a good spot after attempts
-          if (attempts > 5) {
-            minDistanceRequired *= 0.8;
-            attempts = 0;
+          // Distance to previous position
+          const dxPrev = lastButtonX - newX;
+          const dyPrev = lastButtonY - newY;
+          distToPrev = Math.sqrt(dxPrev*dxPrev + dyPrev*dyPrev);
+          
+          tries++;
+          if (tries > 5) {
+            minPointerDist *= 0.8;
+            minPrevDist *= 0.8;
+            tries = 0;
           }
-        } while (distanceToPointer < minDistanceRequired && attempts < 10);
+          
+          if (tries > 20) break;
+          
+        } while ((distToPointer < minPointerDist || distToPrev < minPrevDist) && tries < 20);
         
-        // Apply teleportation with a flash effect
+        // Flash effect
         button.style.transition = "none";
         button.style.opacity = "0.2";
-        button.style.left = `${randX}px`;
-        button.style.top = `${randY}px`;
+        button.style.left = `${newX}px`;
+        button.style.top = `${newY}px`;
         
-        // Restore opacity after teleport
+        // Update positions
+        lastButtonX = newX + rect.width/2;
+        lastButtonY = newY + rect.height/2;
+        trailPositions = [];
+        
+        // Restore opacity
         setTimeout(() => {
           button.style.transition = "opacity 0.3s ease";
           button.style.opacity = "0.8";
         }, 50);
       }
       
-      function isTouchDevice() {
-        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      }
+      // MOUSE EVENTS
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        evade(mouseX, mouseY, false);
+      });
       
-      // Event listeners - use capture phase for more reliable event handling
-      document.addEventListener("mousemove", evadeCursor, true);
+      button.addEventListener('mouseenter', () => {
+        teleport(mouseX, mouseY, false);
+      });
       
-      button.addEventListener("mouseenter", function() {
-        if (!isTouchDevice()) {
-          teleportRandomly();
+      // TOUCH EVENTS
+      document.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches[0]) {
+          evade(e.touches[0].clientX, e.touches[0].clientY, true);
         }
-      }, true);
+      });
       
-      container.addEventListener("touchstart", function() {
-        teleportRandomly();
-      }, true);
+      document.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          evade(e.touches[0].clientX, e.touches[0].clientY, true);
+        }
+      });
       
-      // Handle window resize
-      window.addEventListener("resize", setInitialPosition);
+      // CLICK/TAP ATTEMPTS
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        attempts++;
+        alert(`Nice try! Attempts: ${attempts}`);
+        teleport(mouseX, mouseY, false);
+        return false;
+      });
       
-      // Force reposition after a second to handle any edge cases
-      setTimeout(setInitialPosition, 1000);
-    });
+      button.addEventListener('touchend', (e) => {
+        if (e.target === button) {
+          e.preventDefault();
+          attempts++;
+          alert(`Nice tap! Attempts: ${attempts}`);
+          if (e.changedTouches && e.changedTouches[0]) {
+            teleport(e.changedTouches[0].clientX, e.changedTouches[0].clientY, true);
+          }
+          return false;
+        }
+      });
+      
+      // Ensure correct initial position
+      setTimeout(() => {
+        button.style.transform = 'none';
+        button.style.top = '50%';
+        button.style.left = '50%';
+      }, 100);
+    };
   </script>
 </body>
 </html>
