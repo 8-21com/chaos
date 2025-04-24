@@ -10,7 +10,6 @@
       margin: 0;
       padding: 0;
     }
-
     body {
       background-color: #121212;
       color: #f0f0f0;
@@ -19,115 +18,237 @@
       overflow: hidden;
       position: relative;
     }
-
     .container {
       position: relative;
       width: 100%;
       height: 100%;
     }
-
     .title {
       position: absolute;
       top: 20px;
       width: 100%;
       text-align: center;
       font-size: 1.5rem;
+      font-weight: bold;
       letter-spacing: 2px;
       color: #f0f0f0;
       z-index: 5;
       pointer-events: none;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     }
-
     button {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       padding: 1rem 2rem;
       font-size: 1.1rem;
-      background-color: transparent;
+      background-color: rgba(40, 40, 40, 0.6);
       color: #f0f0f0;
       border: 1px solid #f0f0f0;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s ease;
-      opacity: 0.5;
+      opacity: 0.8;
       z-index: 10;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    }
+    
+    /* Trail effect element */
+    .button-trail {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 9;
     }
   </style>
 </head>
 <body>
   <div class="container" id="container">
-    <div class="title">Block F Begins Now</div>
+    <div class="title">THE MINERS STAY ON</div>
     <button id="launchBtn">Launch Season 2 Dashboard</button>
+    <div id="trailContainer"></div>
   </div>
   <script>
-    const button = document.getElementById("launchBtn");
-    const container = document.getElementById("container");
-
-    function evadeCursor(e) {
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-
-      const btnRect = button.getBoundingClientRect();
-      const btnX = btnRect.left + btnRect.width / 2;
-      const btnY = btnRect.top + btnRect.height / 2;
-
-      const distX = mouseX - btnX;
-      const distY = mouseY - btnY;
-      const distance = Math.sqrt(distX ** 2 + distY ** 2);
-
-      const maxDist = 150;
-
-      if (distance < maxDist) {
-        const angle = Math.atan2(distY, distX);
-        const moveX = -Math.cos(angle) * (maxDist - distance);
-        const moveY = -Math.sin(angle) * (maxDist - distance);
-
-        let newLeft = btnRect.left + moveX;
-        let newTop = btnRect.top + moveY;
-
-        const buttonWidth = btnRect.width;
-        const buttonHeight = btnRect.height;
-
-        // Clamp to window bounds
-        newLeft = Math.max(0, Math.min(window.innerWidth - buttonWidth, newLeft));
-        newTop = Math.max(0, Math.min(window.innerHeight - buttonHeight, newTop));
-
-        button.style.left = `${newLeft}px`;
-        button.style.top = `${newTop}px`;
-
-        // Remove centering transform after first move
-        button.style.transform = "none";
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      const button = document.getElementById("launchBtn");
+      const container = document.getElementById("container");
+      
+      // Make sure button is found
+      if (!button) {
+        console.error("Button not found!");
+        return;
       }
-    }
-
-    function teleportRandomly() {
-      const buttonWidth = button.offsetWidth;
-      const buttonHeight = button.offsetHeight;
-      const maxX = window.innerWidth - buttonWidth;
-      const maxY = window.innerHeight - buttonHeight;
-
-      const randX = Math.random() * maxX;
-      const randY = Math.random() * maxY;
-
-      button.style.left = `${randX}px`;
-      button.style.top = `${randY}px`;
-      button.style.transform = "none";
-    }
-
-    container.addEventListener("mousemove", (e) => {
-      if (!isTouchDevice()) {
-        evadeCursor(e);
+      
+      // Set initial position with a slight delay to ensure dimensions are calculated
+      setTimeout(function() {
+        setInitialPosition();
+      }, 100);
+      
+      function setInitialPosition() {
+        const buttonWidth = button.offsetWidth;
+        const buttonHeight = button.offsetHeight;
+        
+        button.style.position = "absolute";
+        button.style.left = `${window.innerWidth / 2 - buttonWidth / 2}px`;
+        button.style.top = `${window.innerHeight / 2 - buttonHeight / 2}px`;
+        
+        // Make button visible if it was hidden
+        button.style.opacity = "0.8";
       }
+      
+      // Track cursor position and movement
+      let lastMouseX = 0;
+      let lastMouseY = 0;
+      let mouseVelocityX = 0;
+      let mouseVelocityY = 0;
+      
+      function updateMouseVelocity(currentX, currentY) {
+        mouseVelocityX = currentX - lastMouseX;
+        mouseVelocityY = currentY - lastMouseY;
+        lastMouseX = currentX;
+        lastMouseY = currentY;
+      }
+      
+      function evadeCursor(e) {
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        updateMouseVelocity(mouseX, mouseY);
+        
+        const btnRect = button.getBoundingClientRect();
+        const btnX = btnRect.left + btnRect.width / 2;
+        const btnY = btnRect.top + btnRect.height / 2;
+        
+        const distX = mouseX - btnX;
+        const distY = mouseY - btnY;
+        const distance = Math.sqrt(distX * distX + distY * distY);
+        
+        // Dramatically increased detection radius
+        const maxDist = 350;
+        
+        if (distance < maxDist) {
+          // Calculate angle between mouse and button
+          const angle = Math.atan2(distY, distX);
+          
+          // Add jitter based on distance (more erratic when closer)
+          const jitterAmount = (maxDist - distance) / maxDist * 20;
+          const jitterX = (Math.random() * 2 - 1) * jitterAmount;
+          const jitterY = (Math.random() * 2 - 1) * jitterAmount;
+          
+          // Calculate base movement (exponentially stronger when closer)
+          const distanceFactor = 1 - distance / maxDist;
+          const exponentialFactor = Math.pow(distanceFactor, 2) * 4; // Exponential scaling
+          const moveFactor = Math.min(120, maxDist * exponentialFactor);
+          
+          // Add anticipatory evasion (move away from cursor's predicted path)
+          const predictiveX = -Math.sign(mouseVelocityX) * Math.abs(mouseVelocityX) * 3;
+          const predictiveY = -Math.sign(mouseVelocityY) * Math.abs(mouseVelocityY) * 3;
+          
+          // Combine all movement factors
+          const moveX = -Math.cos(angle) * moveFactor + jitterX + predictiveX;
+          const moveY = -Math.sin(angle) * moveFactor + jitterY + predictiveY;
+          
+          // Update position
+          let newLeft = btnRect.left + moveX;
+          let newTop = btnRect.top + moveY;
+          
+          // Clamp to window bounds with padding
+          const padding = 20;
+          newLeft = Math.max(padding, Math.min(window.innerWidth - btnRect.width - padding, newLeft));
+          newTop = Math.max(padding, Math.min(window.innerHeight - btnRect.height - padding, newTop));
+          
+          // Apply new position with dynamic transition
+          const transitionSpeed = Math.max(0.01, Math.min(0.15, distance / 1000));
+          button.style.transition = `left ${transitionSpeed}s ease, top ${transitionSpeed}s ease`;
+          button.style.left = `${newLeft}px`;
+          button.style.top = `${newTop}px`;
+          
+          // Change button opacity based on proximity
+          const opacityValue = 0.5 + (distance / maxDist) * 0.5;
+          button.style.opacity = opacityValue.toString();
+          
+          // Teleport if very close or when mouse is moving fast
+          const mouseSpeed = Math.sqrt(mouseVelocityX * mouseVelocityX + mouseVelocityY * mouseVelocityY);
+          if (distance < 80 || (distance < 150 && mouseSpeed > 15)) {
+            teleportRandomly();
+          }
+        } else {
+          // Reset opacity when far away
+          button.style.opacity = "0.8";
+        }
+      }
+      
+      function teleportRandomly() {
+        const buttonWidth = button.offsetWidth;
+        const buttonHeight = button.offsetHeight;
+        const padding = 20;
+        
+        const maxX = window.innerWidth - buttonWidth - padding * 2;
+        const maxY = window.innerHeight - buttonHeight - padding * 2;
+        
+        // Get mouse position to avoid teleporting near it
+        const mouseX = lastMouseX;
+        const mouseY = lastMouseY;
+        
+        // Try up to 5 times to find a position away from the cursor
+        let randX, randY, distanceToMouse;
+        let attempts = 0;
+        let minDistanceRequired = 200; // Minimum distance from cursor
+        
+        do {
+          randX = padding + Math.random() * maxX;
+          randY = padding + Math.random() * maxY;
+          
+          const dx = mouseX - randX;
+          const dy = mouseY - randY;
+          distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+          
+          attempts++;
+          // Reduce required distance if we can't find a good spot after attempts
+          if (attempts > 5) {
+            minDistanceRequired *= 0.8;
+            attempts = 0;
+          }
+        } while (distanceToMouse < minDistanceRequired && attempts < 10);
+        
+        // Apply teleportation with a flash effect
+        button.style.transition = "none";
+        button.style.opacity = "0.2";
+        button.style.left = `${randX}px`;
+        button.style.top = `${randY}px`;
+        
+        // Restore opacity after teleport
+        setTimeout(() => {
+          button.style.transition = "opacity 0.3s ease";
+          button.style.opacity = "0.8";
+        }, 50);
+      }
+      
+      function isTouchDevice() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      }
+      
+      // Event listeners - use capture phase for more reliable event handling
+      document.addEventListener("mousemove", evadeCursor, true);
+      
+      button.addEventListener("mouseenter", function() {
+        if (!isTouchDevice()) {
+          teleportRandomly();
+        }
+      }, true);
+      
+      container.addEventListener("touchstart", function() {
+        teleportRandomly();
+      }, true);
+      
+      // Handle window resize
+      window.addEventListener("resize", setInitialPosition);
+      
+      // Force reposition after a second to handle any edge cases
+      setTimeout(setInitialPosition, 1000);
     });
-
-    container.addEventListener("touchstart", () => {
-      teleportRandomly();
-    });
-
-    function isTouchDevice() {
-      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    }
   </script>
 </body>
 </html>
