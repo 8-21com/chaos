@@ -41,9 +41,6 @@
     }
     #launchBtn {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       padding: 1rem 2rem;
       font-size: 1.1rem;
       background-color: rgba(40, 40, 40, 0.6);
@@ -77,7 +74,7 @@
   </style>
 </head>
 <body>
-  <div class="title">RSIC SEASON 2: CHAOS</div>
+  <div class="title">RSIC SEASON II: CHAOS</div>
   <button id="launchBtn">Launch Season 2 Dashboard</button>
   <div id="debug"></div>
   
@@ -86,6 +83,13 @@
     window.onload = function() {
       const button = document.getElementById('launchBtn');
       const debug = document.getElementById('debug');
+      
+      // Set initial position explicitly
+      function setInitialPosition() {
+        button.style.transform = 'none'; // Remove transform
+        button.style.left = (window.innerWidth / 2 - button.offsetWidth / 2) + 'px';
+        button.style.top = (window.innerHeight / 2 - button.offsetHeight / 2) + 'px';
+      }
       
       // Create trail elements
       const trails = [];
@@ -324,11 +328,14 @@
       });
       
       // Ensure correct initial position
-      setTimeout(() => {
-        button.style.transform = 'none';
-        button.style.top = '50%';
-        button.style.left = '50%';
-      }, 100);
+      setInitialPosition();
+      
+      // Also add window resize handler
+      window.addEventListener('resize', setInitialPosition);
+      
+      // Call again after a short delay to ensure proper sizing
+      setTimeout(setInitialPosition, 100);
+      setTimeout(setInitialPosition, 500);
     };
   </script>
 </body>
