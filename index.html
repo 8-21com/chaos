@@ -66,7 +66,7 @@
 </head>
 <body>
   <div class="container" id="container">
-    <div class="title">THE MINERS STAY ON</div>
+    <div class="title">RSIC SEASON II: CHAOS</div>
     <button id="launchBtn">Launch Season 2 Dashboard</button>
     <div id="trailContainer"></div>
   </div>
@@ -99,52 +99,58 @@
         button.style.opacity = "0.8";
       }
       
-      // Track cursor position and movement
-      let lastMouseX = 0;
-      let lastMouseY = 0;
-      let mouseVelocityX = 0;
-      let mouseVelocityY = 0;
+      // Touch interaction handling
+      let lastTouchX = 0;
+      let lastTouchY = 0;
+      let touchVelocityX = 0;
+      let touchVelocityY = 0;
+      let touchActive = false;
       
-      function updateMouseVelocity(currentX, currentY) {
-        mouseVelocityX = currentX - lastMouseX;
-        mouseVelocityY = currentY - lastMouseY;
-        lastMouseX = currentX;
-        lastMouseY = currentY;
+      function updateTouchVelocity(currentX, currentY) {
+        touchVelocityX = currentX - lastTouchX;
+        touchVelocityY = currentY - lastTouchY;
+        lastTouchX = currentX;
+        lastTouchY = currentY;
       }
       
-      function evadeCursor(e) {
-        const mouseX = e.clientX;
-        const mouseY = e.clientY;
-        updateMouseVelocity(mouseX, mouseY);
+      function evadeTouchOrCursor(clientX, clientY, isTouch) {
+        // Update the appropriate velocity tracker
+        if (isTouch) {
+          updateTouchVelocity(clientX, clientY);
+        } else {
+          updateMouseVelocity(clientX, clientY);
+        }
         
         const btnRect = button.getBoundingClientRect();
         const btnX = btnRect.left + btnRect.width / 2;
         const btnY = btnRect.top + btnRect.height / 2;
         
-        const distX = mouseX - btnX;
-        const distY = mouseY - btnY;
+        const distX = clientX - btnX;
+        const distY = clientY - btnY;
         const distance = Math.sqrt(distX * distX + distY * distY);
         
-        // Dramatically increased detection radius
-        const maxDist = 350;
+        // Increased detection radius for touch (since fingers are less precise)
+        const maxDist = isTouch ? 450 : 350;
         
         if (distance < maxDist) {
-          // Calculate angle between mouse and button
+          // Calculate angle between pointer and button
           const angle = Math.atan2(distY, distX);
           
           // Add jitter based on distance (more erratic when closer)
-          const jitterAmount = (maxDist - distance) / maxDist * 20;
+          const jitterAmount = (maxDist - distance) / maxDist * (isTouch ? 30 : 20);
           const jitterX = (Math.random() * 2 - 1) * jitterAmount;
           const jitterY = (Math.random() * 2 - 1) * jitterAmount;
           
           // Calculate base movement (exponentially stronger when closer)
           const distanceFactor = 1 - distance / maxDist;
-          const exponentialFactor = Math.pow(distanceFactor, 2) * 4; // Exponential scaling
-          const moveFactor = Math.min(120, maxDist * exponentialFactor);
+          const exponentialFactor = Math.pow(distanceFactor, 2) * (isTouch ? 6 : 4); // Stronger for touch
+          const moveFactor = Math.min(isTouch ? 150 : 120, maxDist * exponentialFactor);
           
-          // Add anticipatory evasion (move away from cursor's predicted path)
-          const predictiveX = -Math.sign(mouseVelocityX) * Math.abs(mouseVelocityX) * 3;
-          const predictiveY = -Math.sign(mouseVelocityY) * Math.abs(mouseVelocityY) * 3;
+          // Add anticipatory evasion (move away from pointer's predicted path)
+          const velocityX = isTouch ? touchVelocityX : mouseVelocityX;
+          const velocityY = isTouch ? touchVelocityY : mouseVelocityY;
+          const predictiveX = -Math.sign(velocityX) * Math.abs(velocityX) * (isTouch ? 5 : 3);
+          const predictiveY = -Math.sign(velocityY) * Math.abs(velocityY) * (isTouch ? 5 : 3);
           
           // Combine all movement factors
           const moveX = -Math.cos(angle) * moveFactor + jitterX + predictiveX;
@@ -159,8 +165,8 @@
           newLeft = Math.max(padding, Math.min(window.innerWidth - btnRect.width - padding, newLeft));
           newTop = Math.max(padding, Math.min(window.innerHeight - btnRect.height - padding, newTop));
           
-          // Apply new position with dynamic transition
-          const transitionSpeed = Math.max(0.01, Math.min(0.15, distance / 1000));
+          // Apply new position with dynamic transition - faster for touch
+          const transitionSpeed = Math.max(0.01, Math.min(isTouch ? 0.1 : 0.15, distance / 1000));
           button.style.transition = `left ${transitionSpeed}s ease, top ${transitionSpeed}s ease`;
           button.style.left = `${newLeft}px`;
           button.style.top = `${newTop}px`;
@@ -169,10 +175,12 @@
           const opacityValue = 0.5 + (distance / maxDist) * 0.5;
           button.style.opacity = opacityValue.toString();
           
-          // Teleport if very close or when mouse is moving fast
-          const mouseSpeed = Math.sqrt(mouseVelocityX * mouseVelocityX + mouseVelocityY * mouseVelocityY);
-          if (distance < 80 || (distance < 150 && mouseSpeed > 15)) {
-            teleportRandomly();
+          // Teleport if very close or when pointer is moving fast
+          const pointerSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+          const teleportThreshold = isTouch ? 120 : 80; // Larger threshold for touch
+          const speedThreshold = isTouch ? 10 : 15;
+          if (distance < teleportThreshold || (distance < (isTouch ? 200 : 150) && pointerSpeed > speedThreshold)) {
+            teleportRandomly(isTouch ? clientX : null, isTouch ? clientY : null);
           }
         } else {
           // Reset opacity when far away
@@ -180,7 +188,34 @@
         }
       }
       
-      function teleportRandomly() {
+      function evadeCursor(e) {
+        if (!isTouchDevice()) {
+          evadeTouchOrCursor(e.clientX, e.clientY, false);
+        }
+      }
+      
+      function handleTouchStart(e) {
+        touchActive = true;
+        if (e.touches && e.touches[0]) {
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+          evadeTouchOrCursor(lastTouchX, lastTouchY, true);
+        }
+      }
+      
+      function handleTouchMove(e) {
+        if (touchActive && e.touches && e.touches[0]) {
+          evadeTouchOrCursor(e.touches[0].clientX, e.touches[0].clientY, true);
+        }
+      }
+      
+      function handleTouchEnd() {
+        touchActive = false;
+        touchVelocityX = 0;
+        touchVelocityY = 0;
+      }
+      
+      function teleportRandomly(touchX, touchY) {
         const buttonWidth = button.offsetWidth;
         const buttonHeight = button.offsetHeight;
         const padding = 20;
@@ -188,22 +223,22 @@
         const maxX = window.innerWidth - buttonWidth - padding * 2;
         const maxY = window.innerHeight - buttonHeight - padding * 2;
         
-        // Get mouse position to avoid teleporting near it
-        const mouseX = lastMouseX;
-        const mouseY = lastMouseY;
+        // Get pointer position to avoid teleporting near it
+        const pointerX = touchX !== null ? touchX : lastMouseX;
+        const pointerY = touchY !== null ? touchY : lastMouseY;
         
-        // Try up to 5 times to find a position away from the cursor
-        let randX, randY, distanceToMouse;
+        // Try up to 5 times to find a position away from the pointer
+        let randX, randY, distanceToPointer;
         let attempts = 0;
-        let minDistanceRequired = 200; // Minimum distance from cursor
+        let minDistanceRequired = touchX !== null ? 250 : 200; // Greater distance for touch
         
         do {
           randX = padding + Math.random() * maxX;
           randY = padding + Math.random() * maxY;
           
-          const dx = mouseX - randX;
-          const dy = mouseY - randY;
-          distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+          const dx = pointerX - randX;
+          const dy = pointerY - randY;
+          distanceToPointer = Math.sqrt(dx * dx + dy * dy);
           
           attempts++;
           // Reduce required distance if we can't find a good spot after attempts
@@ -211,7 +246,7 @@
             minDistanceRequired *= 0.8;
             attempts = 0;
           }
-        } while (distanceToMouse < minDistanceRequired && attempts < 10);
+        } while (distanceToPointer < minDistanceRequired && attempts < 10);
         
         // Apply teleportation with a flash effect
         button.style.transition = "none";
